@@ -5,8 +5,7 @@ import multiprocessing
 import argparse
 import json
 
-from kazoo.client import KazooClient
-from kafka import KafkaConsumer, KafkaProducer, TopicPartition, __version__
+from kafka import KafkaConsumer, KafkaProducer, TopicPartition
 
 
 class Consumer(multiprocessing.Process):
@@ -15,27 +14,36 @@ class Consumer(multiprocessing.Process):
         self.stop_event = multiprocessing.Event()
         self.topic = args.topic
         self.groupid = args.groupid
-        
+        self.server = "%s:%s" % (args.server, args.port)
+        self.partition = args.partition
+        self.inicio = args.inicio
+        self.offset = args.offset
+      
     def stop(self):
         self.stop_event.set()
         
     def run(self):
 
-        consumer = KafkaConsumer(bootstrap_servers='localhost:9092',
-                                 #auto_offset_reset='earliest',
-                                 #auto_offset_reset='largest',
-                                 group_id= self.groupid,
-                                 #enable_auto_commit = True,
-                                 )
+        consumer = KafkaConsumer(
+            bootstrap_servers=self.server, 
+            auto_offset_reset='earliest',
+            group_id=self.groupid)
 
-        #partition = TopicPartition(self.topic, 0)
-        consumer.subscribe([self.topic])
-        #consumer.assign([partition])
-        #consumer.seek(partition, 10)
+        if self.partition is None:
+            partitions = [TopicPartition(self.topic, partition) 
+                           for partition in consumer.partitions_for_topic(self.topic)]
+        else:
+            partitions = [TopicPartition(self.topic, int(self.partition))]
 
+        consumer.assign(partitions)
 
-        #print(consumer.assigned_partitions())
-        #consumer.seek(partition = TopicPartition(self.topic, 0), offset = 2)
+        if self.offset is None:
+            if self.inicio:
+                for partition in partitions:
+                    consumer.seek_to_beginning(partition)
+        else:
+            for partition in partitions:
+                    consumer.seek(partition, int(self.offset))
 
         while not self.stop_event.is_set():
             try:
@@ -58,13 +66,17 @@ class Consumer(multiprocessing.Process):
             except IndexError:
                 pass
 
-        consumer.close()
-        
-
+        consumer.close()      
 
 parser = argparse.ArgumentParser()
 parser.add_argument('topic', help="Tópico Kafka")
 parser.add_argument('--groupid', help="Grupo de consumidor")
+parser.add_argument('--server', help="Servidor de kafka", default = "localhost")
+parser.add_argument('--port', help="Puerto", default = "9092")
+parser.add_argument('--partition', help="Número de particion")
+parser.add_argument('--offset', help="Establece el offset")
+parser.add_argument("--inicio", help="Recupera los mensajes desde el inicio",
+                 action='store_true', default = False)
 
 args = parser.parse_args()
 
@@ -103,8 +115,6 @@ if __name__ == "__main__":
         format='%(asctime)s.%(msecs)s:%(name)s:%(thread)d:%(levelname)s:%(process)d:%(message)s',
         level=logging.WARN
         )
-
-    logging.warn("Verión %s" % __version__)
     try:
         main()
     except:

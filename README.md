@@ -5,4 +5,3 @@
 pip install kafka-python
 pip install RandomWords
 ```
-
