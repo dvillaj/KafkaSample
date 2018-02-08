@@ -21,7 +21,7 @@ class Producer(threading.Thread):
         self.words = int(args.words)
         self.json = args.json
         self.server = "%s:%s" % (args.server, args.port)
-
+        self.name = args.name
         
     def stop(self):
         self.stop_event.set()
@@ -35,7 +35,15 @@ class Producer(threading.Thread):
             message = ' '.join(words).encode('utf8')
 
             if (self.json):
-                json_message = { 'words' : message, 'number' : random.randrange(1000) }
+                json_message = { 'words' : message,
+                         'number' : random.randrange(1000) , 
+                        'timestamp' : datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')
+                        }
+
+                if self.name:
+                    json_message['nombre'] = self.name
+
+
                 message = json.dumps(json_message).encode('utf8')
 
             future = producer.send( self.topic, message )
@@ -57,6 +65,7 @@ parser.add_argument('topic', help="Tópico Kafka")
 parser.add_argument("--time", help="Tiempo de espera entre mensajes", default = "1")
 parser.add_argument("--words", help="Número de palabras", default = "1")
 parser.add_argument("--seed", help="Semilla aleatoria")
+parser.add_argument("--name", help="Nombre del agente")
 parser.add_argument("--json", help="Mensaje en formato json", action='store_true', default = False)
 parser.add_argument('--server', help="Servidor de kafka", default = "localhost")
 parser.add_argument('--port', help="Puerto", default = "9092")
