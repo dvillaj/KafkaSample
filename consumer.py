@@ -53,7 +53,7 @@ class Consumer(multiprocessing.Process):
                     try:
                         valor = json.loads(message.value)['words']
                     except (ValueError):
-                        valor = message.value
+                        valor = message.value.decode('utf-8')
 
                     print ("Recibiendo Mensaje (%s/%d/%d) %s" % (message.topic, 
                                               message.partition,

@@ -6,6 +6,7 @@ from random_words import RandomWords
 import argparse
 import json
 import random
+import uuid
 from datetime import datetime
 
 from kafka import KafkaConsumer, KafkaProducer
@@ -31,20 +32,24 @@ class Producer(threading.Thread):
     def run(self):
         producer = KafkaProducer(bootstrap_servers=self.server)
 
+        n = 1
+
         while not self.stop_event.is_set():
             words = rw.random_words(letter = self.letter, count=self.words)
-            message = ' '.join(words).encode('utf8')
+            message = ' '.join(words).encode('utf-8')
 
             if (self.json):
-                json_message = { 'words' : message,
+                json_message = { 'n' : n,
+                         'words' : message,
                          'number' : random.randrange(1000) , 
-                        'timestamp' : datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')
+                         'timestamp' : datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f'),
+                         'id' : str(uuid.uuid4().hex).encode('utf-8')
                         }
 
                 if self.nombre:
                     json_message['nombre'] = self.nombre
 
-                message = json.dumps(json_message).encode('utf8')
+                message = json.dumps(json_message).encode('utf-8')
 
             future = producer.send( self.topic, message )
             record_metadata = future.get(timeout=10)
@@ -55,6 +60,7 @@ class Producer(threading.Thread):
                 message))
 
             time.sleep(self.time)
+            n = n + 1
 
         producer.close()
 
