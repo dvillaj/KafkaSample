@@ -18,6 +18,7 @@ class Consumer(multiprocessing.Process):
         self.partition = args.partition
         self.inicio = args.inicio
         self.offset = args.offset
+        self.words = args.words
       
     def stop(self):
         self.stop_event.set()
@@ -51,7 +52,10 @@ class Consumer(multiprocessing.Process):
                     logging.info(message)
 
                     try:
-                        valor = json.loads(message.value)['words']
+                        valor = json.loads(message.value)
+                        if self.words:
+                            valor = valor['words']
+                            
                     except (ValueError):
                         valor = message.value.decode('utf-8')
 
@@ -76,6 +80,8 @@ parser.add_argument('--port', help="Puerto", default = "9092")
 parser.add_argument('--partition', help="Número de particion")
 parser.add_argument('--offset', help="Establece el offset")
 parser.add_argument("--inicio", help="Recupera los mensajes desde el inicio",
+                 action='store_true', default = False)
+parser.add_argument("--words", help="Muestra las palabras del mensaje",
                  action='store_true', default = False)
 
 args = parser.parse_args()
