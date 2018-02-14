@@ -4,6 +4,7 @@ import threading, logging, time
 import multiprocessing
 import argparse
 import json
+import sys
 
 from kafka import KafkaConsumer, KafkaProducer, TopicPartition
 
@@ -29,6 +30,10 @@ class Consumer(multiprocessing.Process):
             bootstrap_servers=self.server, 
             auto_offset_reset='earliest',
             group_id=self.groupid)
+
+        if consumer.partitions_for_topic(self.topic) is None:
+            print("El tópico %s no existe!" % self.topic)
+            sys.exit(2)
 
         if self.partition is None:
             partitions = [TopicPartition(self.topic, partition) 
