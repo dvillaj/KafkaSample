@@ -54,7 +54,7 @@ class Producer(threading.Thread):
             future = producer.send( self.topic, message )
             record_metadata = future.get(timeout=10)
 
-            print("Enviando mensaje (%s/%s/%s): %s!" % (record_metadata.topic,
+            print("Enviando mensaje (%s/%s/%s): %s" % (record_metadata.topic,
                 record_metadata.partition,
                 record_metadata.offset,
                 message))
